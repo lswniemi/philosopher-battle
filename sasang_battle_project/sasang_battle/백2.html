@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#171717">
+<title>사상가 배틀 — 싱어 vs 롤스</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Galmuri11&display=swap');
+:root{--ink:#080808;--panel:#171717;--line:#bdbdbd;--paper:#e5e5e5;--muted:#888;--pixel: "Galmuri11","Courier New",monospace}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#080808;color:#eee;font-family:var(--pixel);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+#game{position:relative;width:100vw;height:100dvh;min-height:480px;overflow:hidden;background:#111}
+.scene-bg{position:absolute;inset:0;background-image:linear-gradient(#0005,#0008),url("assets/bookshelf.png");background-position:center;background-size:cover;filter:grayscale(1)}
+.scanlines{position:absolute;inset:0;pointer-events:none;z-index:20;background:repeating-linear-gradient(0deg,#0000 0 3px,#0002 4px 5px);opacity:.3}
+.screen{position:absolute;inset:0;display:none;z-index:2}.screen.active{display:block}
+.pixel-panel{background:linear-gradient(135deg,#252525,#111);border:3px solid #ddd;box-shadow:inset 0 0 0 2px #555,5px 5px 0 #000; padding:14px;position:relative}
+.pixel-panel:before{content:"";position:absolute;inset:4px;border:1px solid #555;pointer-events:none}
+.kicker{font-size:clamp(10px,1.4vw,14px);letter-spacing:.18em;color:#aaa}
+h1,h2,p{margin-top:0}
+.home-layout{height:100%;display:grid;grid-template-columns:minmax(220px,30%) 1fr;gap:clamp(12px,2.5vw,34px);padding:clamp(14px,3vw,38px)}
+.home-menu{align-self:center;max-width:390px;width:100%;margin-left:3vw}
+.logo{font-size:clamp(27px,4.5vw,54px);line-height:1.18;text-shadow:3px 3px #555,6px 6px #000;margin:8px 0 28px;letter-spacing:-.06em}
+.logo small{display:block;font-size:clamp(12px,1.5vw,17px);letter-spacing:.2em;color:#aaa;margin-top:12px}
+.menu-list{display:grid;gap:12px}
+.menu-btn{height:clamp(48px,7vh,66px);text-align:left;padding:0 22px;background:#171717;border:2px solid #888;box-shadow:inset 0 0 0 2px #333,4px 4px #000;font-size:clamp(17px,2vw,23px);position:relative}
+.menu-btn:before{content:"▶";color:#aaa;margin-right:15px;font-size:13px}
+.menu-btn:hover,.menu-btn:focus-visible,.menu-btn:active{outline:none;border-color:#fff;background:#333;box-shadow:inset 0 0 0 2px #aaa,0 0 12px #fff8}
+.home-right{position:relative;display:flex;align-items:center;justify-content:center;min-width:0}
+.home-art{width:min(100%,780px);height:min(80vh,690px);background:url("assets/rawls-normal.png") center/contain no-repeat;filter:grayscale(1);opacity:.92;mix-blend-mode:normal}
+.home-caption{position:absolute;bottom:3%;right:4%;font-size:clamp(10px,1.2vw,14px);color:#aaa;text-shadow:2px 2px #000}
+.sound-toggle{position:absolute;z-index:5;right:22px;top:18px;background:#111d;border:2px solid #aaa;padding:10px 14px;font-size:13px;box-shadow:3px 3px #000}
+.sound-toggle:hover{border-color:white;background:#333}
+.version{position:absolute;bottom:14px;left:20px;color:#777;font-size:10px;letter-spacing:.12em}
+.select-wrap{height:100%;display:grid;place-items:center;padding:20px}
+.select-panel{width:min(720px,96vw);padding:clamp(18px,4vw,38px)}
+.select-title{text-align:center;font-size:clamp(22px,3.2vw,34px);margin:4px 0 25px;text-shadow:3px 3px #000}
+.select-row{display:grid;grid-template-columns:130px 1fr 48px 48px;gap:10px;align-items:center;margin:16px 0}
+.select-label{color:#aaa;font-size:14px}
+.select-value{text-align:center;border:2px solid #777;background:#090909;padding:15px 8px;font-size:clamp(16px,2.4vw,22px);min-height:52px}
+.arrow{height:50px;border:2px solid #888;background:#222;font-size:24px}
+.arrow:hover,.arrow:active{border-color:#fff;background:#555}
+.select-note{font-size:12px;color:#aaa;line-height:1.8;text-align:center;margin:22px auto;max-width:520px}
+.select-actions{display:flex;justify-content:center;gap:12px;margin-top:22px}
+.action-btn{border:2px solid #aaa;background:#222;padding:13px 25px;min-width:130px;box-shadow:3px 3px #000}
+.action-btn.primary{background:#ddd;color:#111;border-color:#fff}
+.action-btn:hover{background:#fff;color:#000}
+.battle{height:100%;display:flex;flex-direction:column;padding:clamp(8px,1.6vw,20px);gap:10px}
+.battle-top{display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:3}
+.nameplate{background:#111e;border:2px solid #aaa;padding:8px 14px;font-size:clamp(12px,1.6vw,17px);box-shadow:3px 3px #000}
+.round-label{font-size:12px;color:#bbb}
+.arena{position:relative;flex:1;min-height:0;border:3px solid #aaa;box-shadow:inset 0 0 0 3px #333,5px 5px #000;background:#161616;overflow:hidden}
+.arena-bg{position:absolute;inset:0;background:url("assets/bookshelf.png") center 48%/cover no-repeat;filter:grayscale(1) brightness(.66)}
+.enemy-art{position:absolute;inset:0;background:url("assets/rawls-normal.png") center center/contain no-repeat;filter:grayscale(1);transition:transform .08s}
+.enemy-art.hit{background-image:url("assets/bookshelf.png");background-size:cover}
+.enemy-art.hit:after{content:"";position:absolute;inset:0;background:url("assets/rawls-hit.png") center center/contain no-repeat}
+.enemy-art.attack{background-image:url("assets/bookshelf.png");background-size:cover}
+.enemy-art.attack:after{content:"";position:absolute;inset:0;background:url("assets/rawls-attack.png") center center/contain no-repeat}
+.enemy-art.attack{animation:lunge .42s ease-in-out}
+@keyframes lunge{0%{transform:translateX(0) scale(1)}35%{transform:translateX(-5%) scale(1.07)}70%{transform:translateX(2%) scale(1.02)}100%{transform:translateX(0) scale(1)}}
+.impact{position:absolute;inset:0;pointer-events:none;opacity:0;background:#fff}
+.impact.flash{animation:flash .24s steps(2)}
+@keyframes flash{0%{opacity:.8}100%{opacity:0}}
+.question-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(620px,88%);text-align:center;padding:10px 14px;background:#111e;border:2px solid #aaa;box-shadow:3px 3px #000;line-height:1.6;font-size:clamp(13px,1.7vw,18px);z-index:3}
+.timer-shell{position:absolute;top:calc(12px + 78px);left:50%;transform:translateX(-50%);width:min(420px,70%);height:9px;border:1px solid #ddd;background:#111;z-index:3}
+.timer-fill{height:100%;width:100%;background:#ddd;transform-origin:left;transition:width .08s linear}
+.dialog{position:relative;z-index:4;min-height:clamp(190px,28vh,255px);display:grid;grid-template-columns:140px 1fr;gap:12px;padding:12px;background:#101010;border:3px solid #ddd;box-shadow:inset 0 0 0 2px #555,5px 5px #000}
+.speaker{border-right:1px solid #555;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:6px}
+.speaker-icon{width:78px;height:78px;border:2px solid #aaa;background:#222;display:grid;place-items:center;font-size:35px;filter:grayscale(1)}
+.speaker-name{font-size:14px;color:#ddd}
+.dialog-content{display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0}
+.prompt{font-size:clamp(12px,1.5vw,15px);line-height:1.6;color:#bbb}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.choice{min-height:52px;text-align:left;padding:8px 10px;background:#242424;border:2px solid #666;box-shadow:inset 0 0 0 1px #333;font-size:clamp(11px,1.35vw,14px);line-height:1.5}
+.choice .num{color:#aaa;margin-right:7px}
+.choice:hover,.choice:focus-visible,.choice:active{outline:none;border-color:#fff;background:#444;box-shadow:0 0 0 1px #fff,0 0 10px #fff7}
+.choice:disabled{opacity:.45;cursor:default}
+.feedback{min-height:20px;color:#eee;font-size:12px;line-height:1.5}
+.player-note{font-size:10px;color:#777;text-align:right}
+.end-wrap{height:100%;display:grid;place-items:center;padding:20px}
+.end-panel{width:min(650px,94vw);text-align:center;padding:clamp(28px,6vw,58px)}
+.end-title{font-size:clamp(38px,7vw,68px);margin:5px 0 18px;text-shadow:4px 4px #555,7px 7px #000}
+.end-sub{font-size:clamp(14px,2vw,20px);color:#ccc;margin-bottom:32px}
+#exitBubble{position:absolute;z-index:10;display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,88vw);padding:22px;background:#111;border:3px solid #eee;box-shadow:0 0 0 100vmax #0009,6px 6px #000;text-align:center;line-height:1.8}
+#exitBubble.show{display:block}
+#exitBubble .close{margin-top:16px}
+.shake{animation:shake .35s steps(2)}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(4px,2px)}}
+@media(max-width:700px){
+ .home-layout{grid-template-columns:42% 1fr;padding:14px;gap:8px}.home-menu{margin:0;align-self:center}.logo{font-size:clamp(22px,6vw,34px);margin-bottom:18px}.menu-btn{padding:0 10px;height:52px;font-size:16px}.menu-btn:before{margin-right:7px}.home-art{height:60vh;background-position:center}.sound-toggle{right:10px;top:10px;padding:8px;font-size:10px}.select-row{grid-template-columns:75px 1fr 42px 42px;gap:6px}.select-label{font-size:11px}.dialog{grid-template-columns:74px 1fr;gap:7px;padding:8px;min-height:215px}.speaker-icon{width:52px;height:52px;font-size:25px}.speaker-name{font-size:11px}.choices{grid-template-columns:1fr 1fr;gap:6px}.choice{font-size:11px;padding:7px;min-height:64px}.question-banner{top:8px;width:94%;font-size:12px;padding:7px}.timer-shell{top:68px}.battle{padding:7px;gap:7px}.nameplate{font-size:11px;padding:7px}.round-label{font-size:10px}.arena{min-height:160px}.enemy-art{background-position:center;background-size:auto 100%}.enemy-art.hit,.enemy-art.attack{background-size:cover}.enemy-art.hit:after,.enemy-art.attack:after{background-size:auto 100%}.prompt{font-size:11px}.feedback{font-size:10px}
+}
+@media(max-height:600px){.battle{gap:5px}.dialog{min-height:160px}.choice{min-height:43px}.question-banner{top:6px}.timer-shell{top:65px}.home-art{height:70vh}}
+
+.settings-panel{max-width:620px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 8px;border-bottom:1px solid #555}
+.setting-row strong{display:block;font-size:clamp(15px,2vw,20px)}
+.setting-row small{display:block;color:#999;font-size:12px;margin-top:7px}
+.setting-toggle{min-width:88px;padding:12px 15px;border:2px solid #aaa;background:#222}
+.setting-toggle[aria-pressed="true"]{background:#ddd;color:#111;border-color:#fff}
+#enemyArt{background-position:center;background-size:contain;background-repeat:no-repeat}
+.enemy-art.hit,#enemyArt.attack{background-image:none!important}
+.enemy-art.hit:after,.enemy-art.attack:after{background-size:contain}
+#impact{z-index:6}
+#impact.flash{animation:flash .24s steps(2)}
+#impact.attack-flash{background:#a00;animation:redflash .32s steps(2)}
+@keyframes redflash{0%{opacity:.48}100%{opacity:0}}
+#arena.success-shake{animation:heavyshake .38s steps(2)}
+@keyframes heavyshake{0%,100%{transform:translate(0,0)}15%{transform:translate(-12px,5px)}30%{transform:translate(10px,-6px)}45%{transform:translate(-9px,-4px)}60%{transform:translate(8px,5px)}75%{transform:translate(-4px,2px)}}
+@media(max-width:900px){
+ #game{min-height:520px}
+ .home-layout{grid-template-columns:minmax(180px,38%) minmax(0,1fr)}
+ .home-art{width:100%;height:72vh}
+ .battle{padding:8px}
+ .dialog{grid-template-columns:100px minmax(0,1fr)}
+}
+@media(max-width:600px){
+ .home-layout{grid-template-columns:42% 58%;padding:10px;gap:2px}
+ .home-menu{min-width:0}
+ .home-art{height:58vh}
+ .logo{font-size:clamp(20px,5.4vw,30px)}
+ .select-wrap{padding:10px}
+ .select-panel{padding:16px 12px}
+ .select-row{grid-template-columns:68px minmax(0,1fr) 36px 36px}
+ .arrow{height:46px}
+ .battle-top{gap:5px}
+ .nameplate{padding:6px;font-size:10px}
+ .arena{min-height:130px}
+ .dialog{grid-template-columns:66px minmax(0,1fr);min-height:190px}
+ .speaker-icon{width:46px;height:46px}
+ .choice{min-height:58px;font-size:clamp(10px,2.5vw,12px)}
+}
+@media(max-height:650px){
+ #game{min-height:0}
+ .battle{gap:5px}
+ .dialog{min-height:150px}
+ .choice{min-height:42px}
+ .arena{min-height:120px}
+}
+
+/* V1.2: subtle idle motion and separate recoil animation */
+.enemy-art{animation:rawls-idle 3.8s ease-in-out infinite;transform-origin:50% 82%;will-change:transform}
+.enemy-art.hit{animation:rawls-recoil .68s cubic-bezier(.18,.75,.25,1) both}
+.enemy-art.attack{animation:lunge .42s ease-in-out}
+@keyframes rawls-idle{0%,100%{transform:translate3d(0,0,0)}25%{transform:translate3d(0,-4px,0)}50%{transform:translate3d(0,-2px,0) scale(1.002)}75%{transform:translate3d(0,-5px,0)}}
+@keyframes rawls-recoil{
+  0%{transform:translate3d(0,0,0) rotate(0) scale(1)}
+  14%{transform:translate3d(-2.8%,0,0) rotate(-1.8deg) scale(1.015)}
+  30%{transform:translate3d(3.6%,0,0) rotate(2deg) scale(.99)}
+  46%{transform:translate3d(-2.4%,0,0) rotate(-1.2deg)}
+  62%{transform:translate3d(1.5%,0,0) rotate(.8deg)}
+  78%{transform:translate3d(-.6%,0,0)}
+  100%{transform:translate3d(0,0,0) rotate(0) scale(1)}
+}
+.battle.paused .enemy-art{animation-play-state:paused!important}
+.pause-btn{border:2px solid #aaa;background:#171717;padding:7px 11px;font-size:clamp(10px,1.2vw,13px);white-space:nowrap;box-shadow:2px 2px #000}
+.pause-btn:hover,.pause-btn:focus-visible{border-color:#fff;background:#333;outline:none}
+.pause-btn:disabled{opacity:.45;cursor:default}
+.pause-overlay{position:absolute;inset:0;z-index:18;display:none;align-items:center;justify-content:center;padding:18px;background:#000b;backdrop-filter:grayscale(1) blur(2px)}
+.pause-overlay.show{display:flex}
+.pause-panel{width:min(390px,90vw);text-align:center;padding:30px 22px}
+.pause-panel h2{font-size:clamp(28px,5vw,42px);margin:14px 0 24px;text-shadow:3px 3px #000}
+@media(max-width:700px){
+ .battle-top{flex-wrap:wrap}
+ .pause-btn{padding:6px 8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .enemy-art{animation-duration:8s}
+}
+</style>
+</head>
+<body>
+<div id="game">
+ <div class="scene-bg"></div>
+ <section id="home" class="screen active">
+  <div class="home-layout">
+   <div class="home-menu">
+    <div class="kicker">THE PHILOSOPHER'S DUEL / 001</div>
+    <h1 class="logo">사상가<br>배틀<small>생각으로 맞서라</small></h1>
+    <div class="menu-list">
+     <button class="menu-btn" id="startBtn">시작</button>
+     <button class="menu-btn" id="settingsBtn">설정</button>
+     <button class="menu-btn" id="exitBtn">종료</button>
+    </div>
+   </div>
+   <div class="home-right"><div class="home-art"></div><div class="home-caption">SINGER  VS  RAWLS</div></div>
+  </div>
+  
+  <div class="version">MONOCHROME PIXEL RPG · VER 1.0</div>
+ </section>
+ <section id="select" class="screen">
+  <div class="select-wrap"><div class="pixel-panel select-panel">
+   <div class="kicker" style="text-align:center">BATTLE PREPARATION</div>
+   <h2 class="select-title">대전 설정</h2>
+   <div class="select-row"><div class="select-label">나의 사상가</div><div class="select-value" id="playerValue">피터 싱어</div><button class="arrow" aria-label="이전 사상가" id="playerPrev">‹</button><button class="arrow" aria-label="다음 사상가" id="playerNext">›</button></div>
+   <div class="select-row"><div class="select-label">상대 사상가</div><div class="select-value" id="enemyValue">존 롤스</div><button class="arrow" aria-label="이전 상대" id="enemyPrev">‹</button><button class="arrow" aria-label="다음 상대" id="enemyNext">›</button></div>
+   <div class="select-row"><div class="select-label">난이도</div><div class="select-value" id="levelValue">보통</div><button class="arrow" aria-label="난이도 낮추기" id="levelPrev">‹</button><button class="arrow" aria-label="난이도 높이기" id="levelNext">›</button></div>
+   <p class="select-note" id="levelDesc">보통 · 제한 시간 8초. 롤스의 주장을 읽고 싱어의 관점에서 가장 설득력 있는 반박을 고르세요.</p>
+   <div class="select-actions"><button class="action-btn" id="backBtn">돌아가기</button><button class="action-btn primary" id="beginBtn">대전 시작</button></div>
+  </div></div>
+ </section>
+ <section id="settings" class="screen">
+  <div class="select-wrap"><div class="pixel-panel select-panel settings-panel">
+   <div class="kicker" style="text-align:center">SYSTEM CONFIGURATION</div>
+   <h2 class="select-title">설정</h2>
+   <div class="setting-row"><div><strong>배경 음악</strong><small>두 곡이 번갈아 재생됩니다.</small></div><button class="setting-toggle" id="musicToggle" aria-pressed="true">켜짐</button></div>
+   <div class="setting-row"><div><strong>전투 효과음</strong><small>공격 및 피격 효과음을 재생합니다.</small></div><button class="setting-toggle" id="sfxToggle" aria-pressed="true">켜짐</button></div>
+   <div class="select-actions"><button class="action-btn" id="settingsBackBtn">돌아가기</button></div>
+  </div></div>
+ </section>
+ <section id="battle" class="screen">
+  <div class="battle">
+   <div class="battle-top"><div class="nameplate">PLAYER · 피터 싱어</div><div class="round-label" id="roundLabel">ROUND 1 / 5</div><div class="nameplate">ENEMY · 존 롤스</div><button class="pause-btn" id="pauseBtn" type="button">Ⅱ 일시정지</button></div>
+   <div class="arena" id="arena">
+    <div class="arena-bg"></div><div class="enemy-art" id="enemyArt"></div>
+    <div class="question-banner" id="claim">“정의의 원칙은 자유롭고 평등한 시민들 사이의 공정한 합의에서 나와야 한다.”</div>
+    <div class="timer-shell"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="impact" id="impact"></div>
+   </div>
+   <div class="dialog">
+    <div class="speaker"><div class="speaker-icon">♟</div><div class="speaker-name">존 롤스</div></div>
+    <div class="dialog-content"><div class="prompt" id="prompt">롤스가 주장을 펼쳤다!<br>어떤 반박으로 맞서겠습니까?</div><div class="choices" id="choices"></div><div class="feedback" id="feedback"></div><div class="player-note">선택지를 누르거나 탭하세요 · P 키로 일시정지</div></div>
+   </div>
+  </div>
+  <div class="pause-overlay" id="pauseOverlay" aria-hidden="true">
+   <div class="pixel-panel pause-panel">
+    <div class="kicker">BATTLE PAUSED</div>
+    <h2>일시정지</h2>
+    <button class="action-btn primary" id="resumeBtn" type="button">재개하기</button>
+   </div>
+  </div>
+ </section>
+ <section id="ending" class="screen"><div class="end-wrap"><div class="pixel-panel end-panel"><div class="kicker">BATTLE RESULT</div><h2 class="end-title" id="endTitle">승리!</h2><div class="end-sub" id="endSub">존 롤스 격파</div><button class="action-btn primary" id="homeBtn">홈으로 돌아가기</button></div></div></section>
+ <div id="exitBubble"><div class="kicker">JOHN RAWLS</div><p>“이건 웹 게임이야, 멍청아.<br>네가 직접 종료해야지.”</p><button class="action-btn close" id="closeExit">확인</button></div>
+ <div class="scanlines"></div>
+</div>
+<audio id="musicA" src="assets/music-veil.mp3" preload="auto"></audio>
+<audio id="musicB" src="assets/music-house.mp3" preload="auto"></audio>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const screens=["home","select","settings","battle","ending"];
+function show(id){screens.forEach(s=>$(s).classList.toggle("active",s===id))}
+let audioCtx=null;
+let musicEnabled=true, sfxEnabled=true, musicIndex=0, musicStarted=false;
+const tracks=[$("musicA"),$("musicB")];
+tracks.forEach((a,i)=>a.addEventListener("ended",()=>{if(musicEnabled){musicIndex=1-i;playMusic()}}));
+function playMusic(){if(!musicEnabled)return;tracks.forEach((a,i)=>{if(i!==musicIndex){a.pause();a.currentTime=0}});const p=tracks[musicIndex].play();if(p&&p.catch)p.catch(()=>{});musicStarted=true}
+function startMusic(){
+ try{const Ctx=window.AudioContext||window.webkitAudioContext;if(Ctx){audioCtx=audioCtx||new Ctx();if(audioCtx.state==="suspended")audioCtx.resume()}}catch(e){}
+ if(musicEnabled&&!musicStarted)playMusic()
+}
+function syncAudioSettings(){
+ $("musicToggle").textContent=musicEnabled?"켜짐":"꺼짐";
+ $("musicToggle").setAttribute("aria-pressed",String(musicEnabled));
+ $("sfxToggle").textContent=sfxEnabled?"켜짐":"꺼짐";
+ $("sfxToggle").setAttribute("aria-pressed",String(sfxEnabled));
+}
+$("musicToggle").onclick=()=>{musicEnabled=!musicEnabled;if(musicEnabled){musicStarted=false;startMusic()}else{tracks.forEach(a=>a.pause());musicStarted=false}syncAudioSettings()};
+$("sfxToggle").onclick=()=>{sfxEnabled=!sfxEnabled;syncAudioSettings()};
+$("settingsBackBtn").onclick=()=>show("home");
+$("startBtn").onclick=()=>{startMusic();show("select")};
+$("settingsBtn").onclick=()=>{startMusic();syncAudioSettings();show("settings")};
+$("exitBtn").onclick=()=>{$("exitBubble").classList.add("show");startMusic()};
+$("closeExit").onclick=()=>$("exitBubble").classList.remove("show");
+$("backBtn").onclick=()=>show("home");
+const levels=[{name:"쉬움",time:11,desc:"쉬움 · 제한 시간 11초. 사상의 핵심을 파악할 여유가 있습니다."},{name:"보통",time:8,desc:"보통 · 제한 시간 8초. 주장을 읽고 빠르게 반박하세요."},{name:"어려움",time:5.5,desc:"어려움 · 제한 시간 5.5초. 더 까다로운 논점과 짧은 시간이 기다립니다."}];
+let level=1, player=0, enemy=0;
+function updateSelect(){$("playerValue").textContent=["피터 싱어"][player];$("enemyValue").textContent=["존 롤스"][enemy];$("levelValue").textContent=levels[level].name;$("levelDesc").textContent=levels[level].desc}
+$("playerPrev").onclick=$("playerNext").onclick=()=>{player=0;updateSelect()};
+$("enemyPrev").onclick=$("enemyNext").onclick=()=>{enemy=0;updateSelect()};
+$("levelPrev").onclick=()=>{level=Math.max(0,level-1);updateSelect()};
+$("levelNext").onclick=()=>{level=Math.min(2,level+1);updateSelect()};
+updateSelect();
+
+const rounds=[
+{claim:"“정의의 원칙은 자유롭고 평등한 시민들 사이의 공정한 합의에서 나와야 한다.”",q:"싱어의 관점에서 이 정의론이 놓칠 수 있는 문제는?",opts:["합의의 당사자를 인간 시민으로 한정하면 동물의 이익이 배제된다.","합의는 언제나 개인의 행복을 극대화한다.","정의는 오직 전통과 관습으로 결정되어야 한다.","모든 생명체는 동일한 능력과 권리를 가진다."],correct:0,why:"도덕적 고려의 경계는 계약에 참여할 수 있는 능력이 아니라 고통과 쾌락을 경험할 수 있는가에 따라 넓어져야 합니다."},
+{claim:"“무지의 베일 뒤에서 사람들은 자신의 사회적 지위를 모른 채 정의의 원칙을 선택한다.”",q:"싱어식 반박으로 가장 적절한 것은?",opts:["무지의 베일은 동물의 이익을 자동으로 대변하지 못하므로 고려 범위를 넓혀야 한다.","무지의 베일은 실제 사회에서 이미 완벽하게 실현되었다.","사람은 자신의 이익만 고려해야 하므로 베일은 불필요하다.","정의로운 사회라면 결과와 무관하게 규칙만 지키면 된다."],correct:0,why:"무지의 베일은 인간 사회 내부의 공정성을 설계하는 장치지만, 종을 경계로 한 배제를 정당화하지는 않습니다."},
+{claim:"“기본적 자유는 다른 사회적·경제적 이익보다 우선한다.”",q:"싱어의 공리주의가 제기할 수 있는 질문은?",opts:["자유의 우선성이 심각한 고통과 피해를 낳을 때 그 결과도 검토해야 하지 않는가?","자유는 언제나 해악을 낳으므로 폐지해야 한다.","자유는 오직 부유한 사람에게만 적용되어야 한다.","결과는 도덕적 판단과 아무 관계가 없다."],correct:0,why:"싱어는 원칙의 이름만으로 판단을 끝내지 않고, 영향을 받는 존재들의 이익과 실제 결과를 함께 따져야 한다고 봅니다."},
+{claim:"“불평등은 최소 수혜자에게 최대 이익이 될 때 정당화될 수 있다.”",q:"싱어의 관점에서 이 원칙에 던질 수 있는 비판은?",opts:["최소 수혜자를 인간 사회 안에서만 정의하면 동물의 고통과 복지가 빠질 수 있다.","불평등은 어떤 경우에도 언제나 정당하다.","최소 수혜자의 이익은 측정할 수 없으므로 무시해야 한다.","부의 총량만 늘면 분배는 중요하지 않다."],correct:0,why:"차등의 원칙이 인간 제도 안의 분배에 집중할 때, 인간이 이용하는 동물의 고통은 제도적 정의의 시야 밖에 남을 수 있습니다."},
+{claim:"“정의로운 제도는 사회의 기본 구조를 규율하는 원칙에서 출발한다.”",q:"싱어가 강조할 법한 반론은?",opts:["제도 개혁뿐 아니라 개인의 소비와 선택도 고통을 줄이는 도덕적 책임을 가진다.","개인의 선택은 어떤 결과도 만들지 않으므로 무관하다.","사회 구조는 도덕적 평가의 대상이 될 수 없다.","도덕적 책임은 법으로 금지된 행동에만 한정된다."],correct:0,why:"싱어는 제도만이 아니라 개인의 실천, 특히 소비와 기부 같은 선택이 타인의 고통에 미치는 영향도 중요하게 봅니다."},
+{claim:"“정의의 원칙은 상호 협력의 조건을 정하는 사회계약으로 이해할 수 있다.”",q:"싱어의 입장에서 사회계약론의 한계는?",opts:["협상하거나 호혜성을 돌려줄 수 없는 존재의 이익이 계약에서 누락될 위험이 있다.","계약은 어떤 상황에서도 반드시 불공정하다.","사회계약은 동물의 이익을 이미 충분히 대표한다.","협력은 도덕과 무관하므로 논의할 필요가 없다."],correct:0,why:"계약에 참여할 능력이 없는 존재도 고통을 느낍니다. 도덕적 고려는 상호 계약 능력에만 묶일 수 없습니다."},
+{claim:"“합리적인 당사자들은 자신이 어떤 삶을 살지 모르는 상태에서 원칙을 선택한다.”",q:"싱어의 평등한 고려 원칙은 무엇을 요구할까?",opts:["비슷한 이익은 종이나 소속과 무관하게 동등한 무게로 고려해야 한다.","모든 존재에게 똑같은 대우와 권리를 기계적으로 부여해야 한다.","인간의 이익은 언제나 동물의 이익보다 우선한다.","이익의 크기보다 당사자의 사회적 지위가 중요하다."],correct:0,why:"이익의 평등한 고려는 동일 대우가 아니라, 유사한 이익을 편견 없이 동등한 중요도로 평가하라는 요구입니다."}
+];
+let queue=[],round=0,turnCount=0,playerHits=0,enemyHits=0,remaining=0,timer=null,locked=false,turnStart=0,paused=false;
+function shuffle(a){return a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1])}
+function begin(){startMusic();queue=shuffle(rounds);round=0;turnCount=0;playerHits=0;enemyHits=0;show("battle");nextRound()}
+$("beginBtn").onclick=begin;
+function pauseBattle(){
+ if(!$("battle").classList.contains("active")||locked||paused)return;
+ const elapsed=(performance.now()-turnStart)/1000;
+ remaining=Math.max(0,remaining-elapsed);
+ clearInterval(timer);timer=null;paused=true;
+ $("battle").querySelector(".battle").classList.add("paused");
+ $("pauseOverlay").classList.add("show");$("pauseOverlay").setAttribute("aria-hidden","false");
+ $("pauseBtn").disabled=true;
+ [...$("choices").children].forEach(b=>b.disabled=true);
+ sound("pause");
+}
+function resumeBattle(){
+ if(!$("battle").classList.contains("active")||!paused||locked)return;
+ paused=false;$("battle").querySelector(".battle").classList.remove("paused");
+ $("pauseOverlay").classList.remove("show");$("pauseOverlay").setAttribute("aria-hidden","true");
+ $("pauseBtn").disabled=false;
+ [...$("choices").children].forEach(b=>b.disabled=false);
+ turnStart=performance.now();clearInterval(timer);timer=setInterval(tick,50);
+ sound("resume");
+}
+$("pauseBtn").onclick=pauseBattle;
+$("resumeBtn").onclick=resumeBattle;
+function nextRound(){if(playerHits>=5){end(false);return}if(enemyHits>=5){end(true);return}if(round>=queue.length){queue=shuffle(rounds);round=0}
+locked=false;const r=queue[round];turnCount++;$("roundLabel").textContent=`ROUND ${turnCount}`;$("claim").textContent=r.claim;$("prompt").textContent="롤스가 주장을 펼쳤다! 어떤 반박으로 맞서겠습니까?";$("feedback").textContent="";$("enemyArt").className="enemy-art";$("timerFill").style.width="100%";
+const choices=shuffle(r.opts.map((t,i)=>({text:t,correct:i===r.correct})));
+$("choices").innerHTML="";choices.forEach((c,i)=>{const b=document.createElement("button");b.className="choice";b.innerHTML=`<span class="num">${i+1}.</span>${c.text}`;b.onclick=()=>{sound("select");answer(c.correct,r)};$("choices").appendChild(b)});
+remaining=levels[level].time;turnStart=performance.now();clearInterval(timer);timer=setInterval(tick,50);paused=false;$("battle").querySelector(".battle").classList.remove("paused");$("pauseOverlay").classList.remove("show");$("pauseOverlay").setAttribute("aria-hidden","true");$("pauseBtn").disabled=false;round++;
+}
+function tick(){if(locked||paused)return;const elapsed=(performance.now()-turnStart)/1000;remaining=Math.max(0,remaining-elapsed);turnStart=performance.now();$("timerFill").style.width=(remaining/levels[level].time*100)+"%";if(remaining<=0){clearInterval(timer);timer=null;answer(false,queue[round-1],true)}}
+let lastUiSoundAt=0;
+function sound(type){
+ if(!sfxEnabled)return;
+ const uiTypes=["ui","settings","select","pause","resume"];
+ const isUi=uiTypes.includes(type),stamp=performance.now();
+ if(isUi&&stamp-lastUiSoundAt<110)return;
+ if(isUi)lastUiSoundAt=stamp;
+ try{
+  const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
+  audioCtx=audioCtx||new Ctx();
+  if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
+  const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  let startHz=120,endHz=45,duration=.25,volume=.12,wave="triangle";
+  if(type==="hit"){startHz=165;endHz=42;duration=.34;volume=.25;wave="sawtooth"}
+  else if(type==="attack"){startHz=96;endHz=39;duration=.24;volume=.13}
+  else if(type==="ui"){startHz=650;endHz=470;duration=.055;volume=.045;wave="square"}
+  else if(type==="settings"){startHz=520;endHz=360;duration=.085;volume=.055;wave="square"}
+  else if(type==="select"){startHz=760;endHz=590;duration=.065;volume=.05;wave="square"}
+  else if(type==="pause"){startHz=430;endHz=250;duration=.13;volume=.06}
+  else if(type==="resume"){startHz=330;endHz=610;duration=.16;volume=.06}
+  osc.type=wave;osc.frequency.setValueAtTime(startHz,now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(1,endHz),now+duration);
+  gain.gain.setValueAtTime(volume,now);gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+  osc.start(now);osc.stop(now+duration+.01);
+  if(type==="hit"){
+   const noise=audioCtx.createBufferSource(),buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.14),audioCtx.sampleRate);
+   const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
+   noise.buffer=buffer;const ng=audioCtx.createGain();ng.gain.setValueAtTime(.17,now);
+   ng.gain.exponentialRampToValueAtTime(.001,now+.14);noise.connect(ng);ng.connect(audioCtx.destination);noise.start(now);
+  }
+ }catch(e){}
+}
+function effectFlash(type){const el=$("impact");el.className="impact";void el.offsetWidth;el.classList.add(type==="attack"?"attack-flash":"flash")}
+function answer(correct,r,timeout=false){if(locked||paused)return;locked=true;clearInterval(timer);timer=null;$("pauseBtn").disabled=true;[...$("choices").children].forEach(b=>b.disabled=true);
+if(correct){enemyHits++;sound("hit");$("enemyArt").className="enemy-art hit";$("arena").classList.remove("shake","success-shake");void $("arena").offsetWidth;$("arena").classList.add("success-shake");$("feedback").textContent="유효한 반박이다! "+r.why;$("prompt").textContent="싱어의 반론이 롤스에게 적중했다!";}else{playerHits++;sound("attack");$("enemyArt").className="enemy-art attack";$("feedback").textContent=timeout?"시간 초과! "+r.why:"반박이 빗나갔다. "+r.why;$("prompt").textContent="롤스의 반격! 당신이 타격을 입었다!";$("arena").classList.remove("shake");void $("arena").offsetWidth;$("arena").classList.add("shake")}
+effectFlash(correct?"hit":"attack");setTimeout(()=>{$("arena").classList.remove("shake","success-shake");if(playerHits>=5)end(false);else if(enemyHits>=5)end(true);else nextRound()},1450)}
+function end(win){clearInterval(timer);timer=null;paused=false;$("battle").querySelector(".battle").classList.remove("paused");$("pauseOverlay").classList.remove("show");$("pauseOverlay").setAttribute("aria-hidden","true");show("ending");$("endTitle").textContent=win?"승리!":"패배…";$("endSub").textContent=win?"존 롤스 격파":"(공부좀 더 하세요)"}
+$("homeBtn").onclick=()=>{clearInterval(timer);timer=null;paused=false;$("battle").querySelector(".battle").classList.remove("paused");$("pauseOverlay").classList.remove("show");show("home");$("enemyArt").className="enemy-art"};
+document.addEventListener("click",e=>{
+ const btn=e.target.closest("button");
+ if(!btn||btn.disabled||btn.classList.contains("choice")||btn.id==="pauseBtn"||btn.id==="resumeBtn")return;
+ sound(["settingsBtn","settingsBackBtn","musicToggle","sfxToggle"].includes(btn.id)?"settings":btn.classList.contains("arrow")?"select":"ui");
+});
+document.addEventListener("keydown",e=>{if($("battle").classList.contains("active")&&e.key.toLowerCase()==="p"){if(paused)resumeBattle();else pauseBattle();return}if($("battle").classList.contains("active")&&!locked&&!paused&&["1","2","3","4"].includes(e.key)){const b=$("choices").children[Number(e.key)-1];if(b)b.click()}if(e.key==="Escape")$("exitBubble").classList.remove("show")});
+})();
+</script>
+</body></html>
